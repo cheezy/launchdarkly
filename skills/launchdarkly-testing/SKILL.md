@@ -56,6 +56,51 @@ class CheckoutFactoryTest {
 The `false` case is the safe-default branch — assert it produces the safe
 behavior, satisfying the security expectation.
 
+### Java / JUnit — grouped by state with multiple `@Nested` classes
+
+When you prefer to group assertions by flag state rather than parameterize, use
+one JUnit 5 `@Nested` inner class per state (the annotation is `@Nested` — there
+is no `@NestedTest`). Each nested class sets its own flag value via `TestData`:
+
+```java
+import com.launchdarkly.sdk.*;
+import com.launchdarkly.sdk.server.*;
+import com.launchdarkly.sdk.server.integrations.TestData;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class CheckoutFactoryTest {
+
+  private Checkout resolve(boolean flagOn) throws Exception {
+    TestData td = TestData.dataSource();
+    td.update(td.flag("new-checkout").booleanFlag().variationForAll(flagOn));
+    try (LDClient client = new LDClient("test-key", new LDConfig.Builder().dataSource(td).build())) {
+      return new CheckoutFactory(client).forContext(LDContext.builder("test-user").build());
+    }
+  }
+
+  @Nested
+  class WhenFlagOn {
+    @Test
+    void usesNewCheckout() throws Exception {
+      assertEquals(NewCheckout.class, resolve(true).getClass());
+    }
+  }
+
+  @Nested
+  class WhenFlagOff { // safe-default branch
+    @Test
+    void usesLegacyCheckout() throws Exception {
+      assertEquals(LegacyCheckout.class, resolve(false).getClass());
+    }
+  }
+}
+```
+
+Both `@Nested` classes are present, so both branches are covered — the on-state
+and the off (safe-default) state each get their own clearly named group.
+
 ## TypeScript Jest/Vitest (server) — both states
 
 Use the Node SDK's `TestData` source (see the `launchdarkly-typescript-node`
@@ -84,6 +129,48 @@ describe('resolveCheckout', () => {
   });
 });
 ```
+
+### TypeScript Jest/Vitest — grouped by state with multiple `describe` blocks
+
+To group by flag state instead of a table, use one `describe` block per state,
+each configuring its own `TestData` value:
+
+```typescript
+import { init } from '@launchdarkly/node-server-sdk';
+import { TestData } from '@launchdarkly/node-server-sdk/integrations';
+import { resolveCheckout, NewCheckout, LegacyCheckout } from './checkout-factory';
+
+describe('resolveCheckout', () => {
+  describe('when the flag is on', () => {
+    it('uses the new checkout', async () => {
+      const td = new TestData();
+      td.update(td.flag('new-checkout').booleanFlag().variationForAll(true));
+      const client = init('test-key', { updateProcessor: td.getFactory() });
+      await client.waitForInitialization({ timeout: 10 });
+
+      const checkout = await resolveCheckout(client, { kind: 'user', key: 'u' });
+      expect(checkout).toBeInstanceOf(NewCheckout);
+      await client.close();
+    });
+  });
+
+  describe('when the flag is off', () => { // safe-default branch
+    it('uses the legacy checkout', async () => {
+      const td = new TestData();
+      td.update(td.flag('new-checkout').booleanFlag().variationForAll(false));
+      const client = init('test-key', { updateProcessor: td.getFactory() });
+      await client.waitForInitialization({ timeout: 10 });
+
+      const checkout = await resolveCheckout(client, { kind: 'user', key: 'u' });
+      expect(checkout).toBeInstanceOf(LegacyCheckout);
+      await client.close();
+    });
+  });
+});
+```
+
+Both `describe` blocks are present, so both the flag-on and flag-off (safe
+default) branches are exercised — just organized by state instead of a table.
 
 ## React components — both states with jest-launchdarkly-mock
 
