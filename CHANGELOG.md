@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0]
+
+### Added
+
+- **launchdarkly-testing skill** — grouped-by-state both-states test examples
+  alongside the existing parameterized ones:
+  - Java: a `CheckoutFactoryTest` using two JUnit 5 `@Nested` inner classes
+    (`WhenFlagOn` / `WhenFlagOff`), each driven by the SDK `TestData` source.
+  - TypeScript: two `describe` blocks (flag on / flag off), each configured via
+    `new TestData()` + `updateProcessor: td.getFactory()`.
+  Both cover the flag-on and flag-off (safe-default) branches with no live
+  LaunchDarkly calls and no real SDK keys.
+
 ## [0.1.0]
 
 Initial release of the standalone, local-only LaunchDarkly Claude Code plugin.

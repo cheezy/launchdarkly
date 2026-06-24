@@ -1,7 +1,7 @@
 {
   "name": "launchdarkly",
   "description": "Generate correct, testable, and removable LaunchDarkly feature-flag code from Claude Code — covers the Java server SDK and the TypeScript SDKs (Node server, client-side JS, React) with skills, scaffolding and flag-removal commands, and an anti-pattern review agent.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Jeff Morgan",
     "email": "cheezy@letstango.ca",
